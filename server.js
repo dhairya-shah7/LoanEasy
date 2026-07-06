@@ -23,7 +23,7 @@ app.use(async (req, res, next) => {
 });
 
 // Configuration Secrets
-const COOKIE_SECRET = process.env.SESSION_SECRET || 'loan-easy-signed-cookie-secret-998811';
+const COOKIE_SECRET = process.env.SESSION_SECRET || 'finnovate-signed-cookie-secret-998811';
 
 // Setup Express middleware
 app.use(express.json());
@@ -240,7 +240,7 @@ app.get('/admin', sessionMiddleware, (req, res) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Access Denied - Loan Easy</title>
+        <title>Access Denied - Finnovate</title>
         <style>
           body {
             background-color: #0c101b;
@@ -461,7 +461,7 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   // Initialize database storage structure before launching server locally
   db.init().then(() => {
     app.listen(PORT, () => {
-      console.log(`Loan Easy Server running successfully on http://localhost:${PORT}`);
+      console.log(`Finnovate Server running successfully on http://localhost:${PORT}`);
     });
   }).catch(err => {
     console.error('CRITICAL: Server failed to start due to database adapter initialization failure:', err);

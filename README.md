@@ -1,6 +1,6 @@
-# Loan Easy - Premium Banking Portal
+# Finnovate - Premium Banking Portal
 
-Loan Easy is a lightweight, secure, and responsive full-stack banking portal for logging, tracking, and auditing loan applications. 
+Finnovate is a lightweight, secure, and responsive full-stack banking portal for logging, tracking, and auditing loan applications. 
 
 Designed with premium typography (**Quincy** and **Playfair Display**) and a clean, light cream-accented corporate layout, it supports email-only login, role-based page security (hack-proof server-side gates), persistent sessions, and a flexible database adapter.
 
@@ -29,7 +29,7 @@ Designed with premium typography (**Quincy** and **Playfair Display**) and a cle
 ## Folder Structure
 
 ```
-LoanEasy/
+Finnovate/
 ├── data/                  # Local CSV database files (Auto-created during local runs)
 │   ├── loans.csv
 │   ├── users.csv
