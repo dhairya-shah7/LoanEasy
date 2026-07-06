@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loan Easy - Premium Loan Application & Management Portal</title>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/styles.css?v=8">
+</head>
+
+<body>
+
+  <!-- Global Header -->
+  <header class="header">
+    <div class="logo-group">
+      <!-- LOGO CONTAINER: Replace the SVG inside with your <img> tag if you have an image logo -->
+      <div class="logo-container" id="logo-container">
+        <img src="/assets/logo.png" alt="Loan Easy">
+      </div>
+      <span class="logo-text">Loan Easy</span>
+    </div>
+
+    <nav class="nav-menu" id="nav-menu">
+      <a href="#dashboard" class="nav-link active" id="nav-dashboard" onclick="switchView('dashboard')">
+        <svg viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="#apply" class="nav-link" id="nav-apply" onclick="switchView('apply')">
+        <svg viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+        <span>Apply For Loan</span>
+      </a>
+      <a href="#records" class="nav-link" id="nav-records" onclick="switchView('records')">
+        <svg viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8m-5 5h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293h3.172a1 1 0 00.707-.293l2.414-2.414a1 1 0 01.707-.293H20" />
+        </svg>
+        <span>My Submissions</span>
+      </a>
+      <a href="/admin" class="nav-link admin-only" id="nav-admin" style="display: none;">
+        <svg viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+        <span>Admin Panel</span>
+      </a>
+    </nav>
+
+    <div class="user-status" id="user-status-container">
+      <span id="user-email-display" class="user-email">-</span>
+      <button onclick="handleLogout()" class="btn-logout">Logout</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-content">
+
+    <!-- VIEW 1: LOGIN SECTION -->
+    <section id="view-login" class="view-section" style="display: none;">
+      <div class="login-card">
+        <div class="login-header">
+          <h2>Welcome to Loan Easy</h2>
+          <p>Provide your email address to enter the banking portal.</p>
+        </div>
+        <form id="login-form" onsubmit="handleLogin(event)">
+          <div class="input-group">
+            <label for="login-email"
+              style="display:block; margin-bottom:8px; font-family:var(--font-sans); font-size:0.85rem; font-weight:600; color:var(--color-text-secondary);">Email
+              Address</label>
+            <input type="email" id="login-email" placeholder="name@gmail.com" required autocomplete="email">
+            <span class="input-desc" style="display:block; margin-top:6px;">Access status will persist on this
+              device.</span>
+          </div>
+          <button type="submit" class="btn-submit" id="btn-login-submit" style="margin-top: 24px;">
+            <span>Access Portal</span>
+            <div class="spinner" id="login-spinner" style="display: none;"></div>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- VIEW 2: PORTAL DASHBOARD -->
+    <section id="view-dashboard" class="view-section">
+
+      <!-- Hero Callout -->
+      <div class="hero-banner">
+        <div class="hero-content">
+          <h1>Simplify Your Banking Operations</h1>
+          <p>Seamlessly log, track, and manage retail and commercial loan applications with the Loan Easy digital
+            workspace.</p>
+          <button onclick="switchView('apply')" class="btn-primary">
+            <svg viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Start New Application</span>
+          </button>
+        </div>
+        <div class="hero-decoration">
+          <svg viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Live Statistics widgets -->
+      <div class="stats-container">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <div>
+            <div class="stat-label">Logged Loans</div>
+            <div class="stat-value" id="dash-loan-count">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <div class="stat-label">Total Portfolio Value</div>
+            <div class="stat-value" id="dash-total-value">₹0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <div>
+            <div class="stat-label">Primary Branch</div>
+            <div class="stat-value" id="dash-top-branch">Ahmedabad</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual Breakdown Charts -->
+      <div class="breakdown-grid">
+        <div class="breakdown-card">
+          <h3>Loan Type Distribution</h3>
+          <div id="loan-type-bars" class="type-bars-container">
+            <p style="color: #64748b; font-size: 0.9rem;">No loan distribution records available yet.</p>
+          </div>
+        </div>
+        <div class="breakdown-card">
+          <h3>Customer Classification</h3>
+          <div class="pie-container">
+            <div class="segmented-progress-bar">
+              <div id="bar-etb" class="bar-fill etb" style="width: 50%;">ETB (50%)</div>
+              <div id="bar-ntb" class="bar-fill ntb" style="width: 50%;">NTB (50%)</div>
+            </div>
+            <div class="pie-labels">
+              <span class="label-item"><span class="dot etb"></span>Existing to Bank (ETB)</span>
+              <span class="label-item"><span class="dot ntb"></span>New to Bank (NTB)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: LOAN WIZARD APPLICATION FORM -->
+    <section id="view-apply" class="view-section" style="display: none;">
+      <div class="form-wrapper">
+        <div class="form-header">
+          <h2>Apply For New Loan</h2>
+          <p>Please provide the details below. All fields must be accurately recorded.</p>
+        </div>
+
+        <!-- Wizard Progress Bar -->
+        <div class="wizard-steps">
+          <div class="step-indicator active" id="step-1-indicator">
+            <div class="step-number">1</div>
+            <div class="step-label">Applicant Info</div>
+          </div>
+          <div class="step-line" id="step-line-1"></div>
+          <div class="step-indicator" id="step-2-indicator">
+            <div class="step-number">2</div>
+            <div class="step-label">Loan Settings</div>
+          </div>
+        </div>
+
+        <!-- Loan Form -->
+        <form id="loan-application-form" onsubmit="handleLoanSubmit(event)">
+
+          <!-- STEP 1 CONTAINER -->
+          <div id="form-step-1" class="form-step-content">
+            <div class="form-grid">
+
+              <!-- Applicant Name -->
+              <div class="form-group">
+                <label for="loan-name">Applicant Name</label>
+                <input type="text" id="loan-name" placeholder="John Doe" required>
+                <span class="field-error" id="error-name"></span>
+              </div>
+
+              <!-- PAN Identification -->
+              <div class="form-group">
+                <label for="loan-pan">PAN Identification Number</label>
+                <input type="text" id="loan-pan" placeholder="ABCDE1234F" style="text-transform: uppercase;" required>
+                <span class="input-desc">Alphanumeric (e.g. ABCDE1234F)</span>
+                <span class="field-error" id="error-pan"></span>
+              </div>
+
+              <!-- Login Date -->
+              <div class="form-group">
+                <label for="loan-login-date">Login Date</label>
+                <input type="date" id="loan-login-date" required>
+                <span class="field-error" id="error-login-date"></span>
+              </div>
+
+              <!-- Branch Assignment (Ahmedabad Focus) -->
+              <div class="form-group">
+                <label for="loan-branch">Assigned Bank Branch</label>
+                <input type="text" id="loan-branch" placeholder="e.g. Ahmedabad C.G. Road" required>
+                <span class="field-error" id="error-branch"></span>
+              </div>
+
+            </div>
+
+            <div class="form-actions">
+              <div></div>
+              <button type="button" onclick="nextWizardStep()" class="btn-primary">
+                <span>Continue</span>
+                <svg viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 2 CONTAINER -->
+          <div id="form-step-2" class="form-step-content" style="display: none;">
+            <div class="form-grid">
+
+              <!-- Loan Amount -->
+              <div class="form-group">
+                <label for="loan-amount">Desired Loan Amount (₹)</label>
+                <div class="amount-input-wrapper">
+                  <span class="currency-symbol">₹</span>
+                  <input type="number" id="loan-amount" placeholder="5,00,000" min="1" step="any" required>
+                </div>
+                <span class="input-desc" id="amount-text-preview">Amount in words: -</span>
+                <span class="field-error" id="error-amount"></span>
+              </div>
+
+              <!-- DSA/Connector Name -->
+              <div class="form-group">
+                <label for="loan-dsa">DSA / Connector Name</label>
+                <input type="text" id="loan-dsa" placeholder="e.g. Vimal Shah" required>
+                <span class="field-error" id="error-dsa"></span>
+              </div>
+
+              <!-- Customer Classification (ETB/NTB) -->
+              <div class="form-group full-width">
+                <label>Customer Classification</label>
+                <div class="segmented-control">
+                  <input type="radio" id="type-etb" name="customer_type" value="ETB" checked>
+                  <label for="type-etb">Existing to Bank (ETB)</label>
+
+                  <input type="radio" id="type-ntb" name="customer_type" value="NTB">
+                  <label for="type-ntb">New to Bank (NTB)</label>
+                </div>
+              </div>
+
+              <!-- Loan Type Cards Grid -->
+              <div class="form-group full-width">
+                <label>Loan Type Classification</label>
+                <div class="loan-type-cards-grid">
+
+                  <label class="loan-type-card active">
+                    <input type="radio" name="loan_type" value="Home" checked onclick="selectLoanCard(this)">
+                    <svg class="card-icon-svg" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span class="card-title">Home Loan</span>
+                    <span class="card-desc">Standard housing purchase loan</span>
+                  </label>
+
+                  <label class="loan-type-card">
+                    <input type="radio" name="loan_type" value="Home Max" onclick="selectLoanCard(this)">
+                    <svg class="card-icon-svg" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                    <span class="card-title">Home Max</span>
+                    <span class="card-desc">High-value residential financing</span>
+                  </label>
+
+                  <label class="loan-type-card">
+                    <input type="radio" name="loan_type" value="Home Takeover" onclick="selectLoanCard(this)">
+                    <svg class="card-icon-svg" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    <span class="card-title">Home Takeover</span>
+                    <span class="card-desc">Refinance existing balance</span>
+                  </label>
+
+                  <label class="loan-type-card">
+                    <input type="radio" name="loan_type" value="Home Suvidha" onclick="selectLoanCard(this)">
+                    <svg class="card-icon-svg" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span class="card-title">Home Suvidha</span>
+                    <span class="card-desc">Renovation and home repairs</span>
+                  </label>
+
+                  <label class="loan-type-card">
+                    <input type="radio" name="loan_type" value="Home Top-up" onclick="selectLoanCard(this)">
+                    <svg class="card-icon-svg" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    <span class="card-title">Home Top-up</span>
+                    <span class="card-desc">Additional borrowing on home asset</span>
+                  </label>
+
+                  <label class="loan-type-card">
+                    <input type="radio" name="loan_type" value="Mortgage" onclick="selectLoanCard(this)">
+                    <svg class="card-icon-svg" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <span class="card-title">Mortgage</span>
+                    <span class="card-desc">Loan against property assets</span>
+                  </label>
+
+                </div>
+              </div>
+
+            </div>
+
+            <div class="form-actions">
+              <button type="button" onclick="prevWizardStep()" class="btn-secondary">Back</button>
+              <button type="submit" class="btn-primary" id="btn-loan-submit">
+                <span>Submit Loan Log</span>
+                <div class="spinner" id="loan-spinner" style="display: none;"></div>
+              </button>
+            </div>
+          </div>
+
+        </form>
+      </div>
+    </section>
+
+    <!-- VIEW 4: MY SUBMISSIONS / DATABASE LIST -->
+    <section id="view-records" class="view-section" style="display: none;">
+      <div class="records-container">
+
+        <!-- Filter and Search Control Bar -->
+        <div class="controls-bar">
+          <div class="search-box">
+            <svg class="search-icon-svg" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" id="records-search" placeholder="Search by Applicant Name, PAN, or DSA..."
+              oninput="filterRecords()">
+          </div>
+
+          <div class="filters-group">
+            <select id="filter-loan-type" onchange="filterRecords()">
+              <option value="">All Loan Types</option>
+              <option value="Home">Home</option>
+              <option value="Home Max">Home Max</option>
+              <option value="Home Takeover">Home Takeover</option>
+              <option value="Home Suvidha">Home Suvidha</option>
+              <option value="Home Top-up">Home Top-up</option>
+              <option value="Mortgage">Mortgage</option>
+            </select>
+
+            <select id="filter-cust-type" onchange="filterRecords()">
+              <option value="">All Customers</option>
+              <option value="ETB">Existing to Bank (ETB)</option>
+              <option value="NTB">New to Bank (NTB)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Data Grid -->
+        <div class="table-card">
+          <div class="table-header">
+            <h3>Registered Loan Submissions</h3>
+            <span class="rows-count" id="rows-count-badge">0 Records Found</span>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Applicant Name</th>
+                  <th>PAN Number</th>
+                  <th>Submission Date</th>
+                  <th>Amount (₹)</th>
+                  <th>Branch Assigned</th>
+                  <th>DSA Name</th>
+                  <th>Classification</th>
+                  <th>Loan Type</th>
+                  <th>Logged By</th>
+                </tr>
+              </thead>
+              <tbody id="loans-table-body">
+                <tr>
+                  <td colspan="9" style="text-align: center; color: #64748b;">No loan logs registered under this session
+                    yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Status Notification Toast -->
+  <div id="global-toast" class="toast-notification">Notification details.</div>
+
+  <!-- Success Submission Modal -->
+  <div id="success-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-checkmark">✓</div>
+      <h2>Loan Application Logged</h2>
+      <p>The application record was written to the system database.</p>
+      <div class="modal-details" id="modal-details-box"></div>
+      <button onclick="closeSuccessModal()" class="btn-primary" style="margin-top: 10px; width: 100%;">Return to
+        Portal</button>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+
+</html>

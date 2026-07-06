@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Control Centre - Loan Easy</title>
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/styles.css?v=8">
+  
+  <style>
+    body {
+      background: var(--color-bg-base);
+      color: var(--color-text-primary);
+      min-height: 100vh;
+      overflow-y: auto;
+      font-family: var(--font-body);
+    }
+
+    /* Admin Container Layout */
+    .admin-container {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+
+    /* Page Header */
+    .admin-page-title-group {
+      margin-bottom: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 16px;
+      border-bottom: 1px solid var(--color-border);
+      padding-bottom: 24px;
+    }
+
+    .admin-page-title-group h1 {
+      font-family: var(--font-body);
+      font-size: 2.2rem;
+      color: var(--color-text-primary);
+      margin: 0 0 6px 0;
+    }
+
+    .admin-meta-info {
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      color: var(--color-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Badge Admin */
+    .badge-admin {
+      background: rgba(0, 112, 243, 0.06);
+      border: 1px solid rgba(0, 112, 243, 0.12);
+      color: var(--color-primary);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.78rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-sans);
+    }
+
+    .badge-admin svg {
+      width: 12px;
+      height: 12px;
+      stroke: currentColor;
+      stroke-width: 2.5;
+      fill: none;
+    }
+
+    /* Panels section */
+    .panel {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 40px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .panel-title {
+      font-family: var(--font-body);
+      font-size: 1.5rem;
+      margin: 0;
+      color: var(--color-text-primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .panel-title svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--color-primary);
+      stroke-width: 2;
+      fill: none;
+    }
+
+    /* Action buttons */
+    .btn-download {
+      font-family: var(--font-sans);
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition-smooth);
+      text-decoration: none;
+      box-shadow: 0 4px 10px rgba(0, 112, 243, 0.1);
+    }
+
+    .btn-download svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .btn-download:hover {
+      background: #005cc5;
+      box-shadow: 0 6px 15px rgba(0, 112, 243, 0.25);
+    }
+
+    .btn-secondary {
+      font-family: var(--font-sans);
+      background: #ffffff;
+      color: var(--color-text-secondary);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: var(--transition-smooth);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-secondary svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .btn-secondary:hover {
+      background: var(--color-bg-deep);
+      color: var(--color-text-primary);
+    }
+
+    /* Table styles */
+    .table-container {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--color-border);
+    }
+
+    /* Toggle Button */
+    .btn-toggle {
+      font-family: var(--font-sans);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.72rem;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: var(--transition-smooth);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-toggle.to-admin {
+      background: rgba(16, 185, 129, 0.08);
+      color: var(--color-secondary);
+      border-color: rgba(16, 185, 129, 0.15);
+    }
+
+    .btn-toggle.to-admin:hover {
+      background: var(--color-secondary);
+      color: white;
+      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.15);
+    }
+
+    .btn-toggle.to-customer {
+      background: rgba(220, 38, 38, 0.08);
+      color: var(--color-danger);
+      border-color: rgba(220, 38, 38, 0.15);
+    }
+
+    .btn-toggle.to-customer:hover {
+      background: var(--color-danger);
+      color: white;
+      box-shadow: 0 4px 10px rgba(220, 38, 38, 0.15);
+    }
+
+    @media (max-width: 768px) {
+      .admin-header-actions {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+      }
+      .admin-container {
+        padding: 0 12px;
+        margin: 20px auto;
+      }
+      .admin-page-title-group {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
+        padding-bottom: 16px;
+      }
+      .admin-page-title-group h1 {
+        font-size: 1.8rem;
+      }
+      .panel {
+        padding: 20px 16px;
+      }
+      .panel-header {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+      }
+      .panel-title {
+        font-size: 1.3rem;
+      }
+      .btn-download {
+        width: 100%;
+        justify-content: center;
+      }
+      .nav-menu {
+        border-left: none !important;
+        padding-left: 0 !important;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .user-status {
+        flex-direction: column;
+        gap: 4px;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  
+  <!-- Global Header -->
+  <header class="header">
+    <div class="logo-group">
+      <!-- LOGO CONTAINER -->
+      <div class="logo-container" id="admin-logo-container">
+        <img src="/assets/logo.png" alt="Loan Easy">
+      </div>
+      <span class="logo-text">Loan Easy</span>
+    </div>
+    
+    <div class="admin-header-actions" style="display: flex; align-items: center; gap: 20px;">
+      <div class="user-status" id="user-status-container" style="display: flex; align-items: center; gap: 12px;">
+        <span id="admin-email-display" class="user-email" style="font-weight:600; color:var(--color-text-primary); font-size:0.9rem;">-</span>
+        <span class="badge-admin">
+          <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+          Admin
+        </span>
+      </div>
+      
+      <div class="nav-menu" style="display: flex; gap: 12px; border-left: 1px solid var(--color-border); padding-left: 20px;">
+        <a href="/" class="btn-secondary">
+          <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+          <span>Portal Dashboard</span>
+        </a>
+        <button onclick="handleLogout()" class="btn-secondary" style="color:var(--color-danger); border-color:rgba(220, 38, 38, 0.15); background:rgba(220, 38, 38, 0.02);">
+          <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Centered Admin Content -->
+  <main class="admin-container">
+    
+    <!-- Page title group -->
+    <div class="admin-page-title-group">
+      <div>
+        <h1>Administrative Control Centre</h1>
+        <div class="admin-meta-info">
+          <span>Root Access Control Panel</span>
+          <span style="color: var(--color-border-focus); font-weight: 700;">Secure Portal Session</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats summary widgets -->
+    <section class="stats-grid" style="margin-bottom: 40px;">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+        </div>
+        <div>
+          <div class="stat-label">Total Applications</div>
+          <div id="stat-total-loans" class="stat-value">-</div>
+          <div class="stat-desc">Cumulative applications logged in system</div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon" style="color: var(--color-secondary); background: rgba(16, 185, 129, 0.05);">
+          <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
+        <div>
+          <div class="stat-label">Total Loan Value</div>
+          <div id="stat-total-amt" class="stat-value">-</div>
+          <div class="stat-desc">Aggregated portfolio value logged</div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon" style="color: var(--color-text-primary); background: rgba(0, 0, 0, 0.03);">
+          <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+        </div>
+        <div>
+          <div class="stat-label">Registered System Users</div>
+          <div id="stat-total-users" class="stat-value">-</div>
+          <div class="stat-desc">Customers & Admin accounts</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel: Users & Role Management -->
+    <section class="panel" id="users-section">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+          <span>User Directory & Permission Toggles</span>
+        </h2>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>User Email</th>
+              <th>System Role</th>
+              <th>First Logged Session</th>
+              <th>Last Active Session</th>
+              <th>Client IP Address</th>
+              <th>Administrative Status</th>
+            </tr>
+          </thead>
+          <tbody id="user-table-body">
+            <tr>
+              <td colspan="6" style="text-align: center; color: #64748b;">Loading user directory...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Panel: Audit Trails -->
+    <section class="panel" id="audit-section">
+      <div class="panel-header" style="flex-wrap: wrap; gap: 16px;">
+        <h2 class="panel-title">
+          <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+          <span>Real-time System Audit Trail</span>
+        </h2>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <a href="/api/admin/download-csv" class="btn-download">
+            <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            <span>Download Loans CSV</span>
+          </a>
+          <a href="/api/admin/download-audit-logs" class="btn-download" style="background: var(--color-secondary); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.1);">
+            <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            <span>Download Audit CSV</span>
+          </a>
+        </div>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Operator Email</th>
+              <th>IP Address</th>
+              <th>Logged Event</th>
+              <th>Transaction Details</th>
+            </tr>
+          </thead>
+          <tbody id="audit-table-body">
+            <tr>
+              <td colspan="5" style="text-align: center; color: #64748b;">Loading system logs...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="toast-notification">Successfully processed role toggle.</div>
+
+  <script>
+    // Disable Browser Developer Tools (F12, right-click, shortcuts)
+    (function() {
+      document.addEventListener('contextmenu', event => event.preventDefault());
+      document.addEventListener('keydown', event => {
+        if (
+          event.key === 'F12' ||
+          (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'i' || event.key === 'J' || event.key === 'j' || event.key === 'C' || event.key === 'c')) ||
+          (event.ctrlKey && (event.key === 'U' || event.key === 'u'))
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          return false;
+        }
+      });
+      setInterval(() => {
+        const startTime = performance.now();
+        debugger;
+        if (performance.now() - startTime > 100) {
+          document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0c101b;color:#e2e8f0;font-family:sans-serif;text-align:center;padding:20px;"><h1>Developer tools are disabled for security reasons.</h1></div>';
+        }
+      }, 1000);
+    })();
+
+    let currentAdminEmail = '';
+
+    async function checkAuthAndLoad() {
+      try {
+        const response = await fetch('/api/auth/me');
+        const data = await response.json();
+        
+        if (!data.authenticated || data.user.role !== 'admin') {
+          window.location.href = '/';
+          return;
+        }
+
+        currentAdminEmail = data.user.email;
+        document.getElementById('admin-email-display').textContent = currentAdminEmail;
+        
+        await Promise.all([
+          loadUsers(),
+          loadAuditLogs(),
+          loadStats()
+        ]);
+      } catch (err) {
+        console.error('Initial admin load failed:', err);
+        window.location.href = '/';
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const loansRes = await fetch('/api/loans');
+        const loansData = await loansRes.json();
+        const loans = loansData.loans || [];
+
+        const totalLoans = loans.length;
+        const totalValue = loans.reduce((sum, loan) => sum + Number(loan.loan_amt || 0), 0);
+
+        document.getElementById('stat-total-loans').textContent = totalLoans;
+        document.getElementById('stat-total-amt').textContent = '₹' + totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      }
+    }
+
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/admin/users');
+        const data = await res.json();
+        const users = data.users || [];
+
+        document.getElementById('stat-total-users').textContent = users.length;
+
+        const tbody = document.getElementById('user-table-body');
+        tbody.innerHTML = '';
+
+        if (users.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b;">No users registered in system database.</td></tr>`;
+          return;
+        }
+
+        users.forEach(user => {
+          const isSelf = user.email.toLowerCase() === currentAdminEmail.toLowerCase();
+          const isRootAdmin = user.email.toLowerCase() === 'vimal1511786@gmail.com';
+          
+          let actionButton = '';
+          if (isRootAdmin) {
+            actionButton = `<span style="color:var(--color-text-muted); font-size:0.8rem; font-weight:700; text-transform:uppercase;">System Root Admin</span>`;
+          } else if (isSelf) {
+            actionButton = `<span style="color:var(--color-text-muted); font-size:0.8rem; font-weight:700; text-transform:uppercase;">Active Account</span>`;
+          } else {
+            const targetRole = user.role === 'admin' ? 'customer' : 'admin';
+            const actionText = user.role === 'admin' ? 'Demote' : 'Promote';
+            const actionClass = user.role === 'admin' ? 'to-customer' : 'to-admin';
+            actionButton = `<button onclick="toggleUserRole('${user.email}', '${targetRole}')" class="btn-toggle ${actionClass}">${actionText}</button>`;
+          }
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td style="font-weight: 600; color:var(--color-text-primary);">${escapeHtml(user.email)}</td>
+            <td><span class="role-badge ${user.role}">${user.role}</span></td>
+            <td>${formatDate(user.first_login)}</td>
+            <td>${formatDate(user.last_login)}</td>
+            <td><code>${escapeHtml(user.ip_address || 'None')}</code></td>
+            <td>${actionButton}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+      } catch (err) {
+        console.error('Failed to load user directory:', err);
+        document.getElementById('user-table-body').innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--color-danger);">Error loading users.</td></tr>`;
+      }
+    }
+
+    async function toggleUserRole(email, newRole) {
+      try {
+        const res = await fetch('/api/admin/toggle', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, role: newRole })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          showToast(`Successfully toggled admin permissions for ${email}`);
+          await Promise.all([
+            loadUsers(),
+            loadAuditLogs()
+          ]);
+        } else {
+          alert(data.error || 'Failed to update user administrative status.');
+        }
+      } catch (err) {
+        console.error('Role update failed:', err);
+        alert('Internal connection error during permission updates.');
+      }
+    }
+
+    async function loadAuditLogs() {
+      try {
+        const res = await fetch('/api/admin/audit-logs');
+        const data = await res.json();
+        const logs = data.auditLogs || [];
+
+        const tbody = document.getElementById('audit-table-body');
+        tbody.innerHTML = '';
+
+        if (logs.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b;">No system audit entries catalogued.</td></tr>`;
+          return;
+        }
+
+        const displayLogs = logs.slice(0, 15);
+
+        displayLogs.forEach(log => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><code>${formatDate(log.timestamp)}</code></td>
+            <td style="font-weight: 600; color:var(--color-text-primary);">${escapeHtml(log.user_email)}</td>
+            <td><code>${escapeHtml(log.ip_address)}</code></td>
+            <td><strong style="color: var(--color-primary); font-family:var(--font-sans); text-transform:uppercase; font-size:0.75rem;">${escapeHtml(log.action)}</strong></td>
+            <td style="font-size:0.85rem; color:var(--color-text-secondary);">${escapeHtml(log.details)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+      } catch (err) {
+        console.error('Failed to load system audit trails:', err);
+        document.getElementById('audit-table-body').innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--color-danger);">Error loading system audit trails.</td></tr>`;
+      }
+    }
+
+    async function handleLogout() {
+      try {
+        const res = await fetch('/api/auth/logout', { method: 'POST' });
+        if (res.ok) {
+          window.location.href = '/';
+        }
+      } catch (err) {
+        console.error('Sign out error:', err);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function formatDate(isoString) {
+      if (!isoString) return '-';
+      try {
+        const d = new Date(isoString);
+        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      } catch (e) {
+        return isoString;
+      }
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.style.display = 'block';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 4000);
+    }
+
+    window.onload = checkAuthAndLoad;
+  </script>
+</body>
+</html>
