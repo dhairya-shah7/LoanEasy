@@ -12,32 +12,32 @@ let vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
 let vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
 
 if (!vapidPublicKey || !vapidPrivateKey) {
-  const vapidKeysFile = path.join(__dirname, 'data', 'vapid_keys.json');
-  const dataDir = path.join(__dirname, 'data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-  
-  if (fs.existsSync(vapidKeysFile)) {
-    try {
+  try {
+    const vapidKeysFile = path.join(__dirname, 'data', 'vapid_keys.json');
+    const dataDir = path.join(__dirname, 'data');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    
+    if (fs.existsSync(vapidKeysFile)) {
       const keys = JSON.parse(fs.readFileSync(vapidKeysFile, 'utf8'));
       vapidPublicKey = keys.publicKey;
       vapidPrivateKey = keys.privateKey;
-    } catch (e) {
-      console.error('Error reading vapid_keys.json:', e);
     }
-  }
-  
-  if (!vapidPublicKey || !vapidPrivateKey) {
+    
+    if (!vapidPublicKey || !vapidPrivateKey) {
+      const keys = webpush.generateVAPIDKeys();
+      vapidPublicKey = keys.publicKey;
+      vapidPrivateKey = keys.privateKey;
+      fs.writeFileSync(vapidKeysFile, JSON.stringify(keys, null, 2), 'utf8');
+      console.log('Generated and saved new VAPID keys to data/vapid_keys.json');
+    }
+  } catch (e) {
+    console.error('Failed to load/save persistent VAPID keys, using in-memory keys fallback:', e);
+    // Fallback to in-memory generated keys if filesystem is read-only (like Vercel)
     const keys = webpush.generateVAPIDKeys();
     vapidPublicKey = keys.publicKey;
     vapidPrivateKey = keys.privateKey;
-    try {
-      fs.writeFileSync(vapidKeysFile, JSON.stringify(keys, null, 2), 'utf8');
-      console.log('Generated and saved new VAPID keys to data/vapid_keys.json');
-    } catch (e) {
-      console.error('Error writing vapid_keys.json:', e);
-    }
   }
 }
 
