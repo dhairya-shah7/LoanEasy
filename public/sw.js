@@ -10,7 +10,7 @@ self.addEventListener('push', function(event) {
       badge: '/assets/logo.png',
       vibrate: [100, 50, 100],
       data: {
-        url: '/private/admin.html'
+        url: '/admin'
       }
     };
 
@@ -32,7 +32,7 @@ self.addEventListener('push', function(event) {
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
 
-  const urlToOpen = new URL(event.notification.data?.url || '/private/admin.html', self.location.origin).href;
+  const urlToOpen = new URL(event.notification.data?.url || '/admin', self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({
