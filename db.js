@@ -177,6 +177,12 @@ const db = {
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
           );
         `);
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS settings (
+            key VARCHAR(100) PRIMARY KEY,
+            value TEXT
+          );
+        `);
         console.log('PostgreSQL database schemas verified/created.');
       } catch (err) {
         console.error('Error initializing PostgreSQL schemas:', err);
@@ -193,6 +199,7 @@ const db = {
         await mongoDb.collection('loans').createIndex({ login_date: -1, id: -1 });
         await mongoDb.collection('audit_logs').createIndex({ timestamp: -1 });
         await mongoDb.collection('push_subscriptions').createIndex({ endpoint: 1 }, { unique: true });
+        await mongoDb.collection('settings').createIndex({ key: 1 }, { unique: true });
         console.log('MongoDB database connection established and indexes verified.');
       } catch (err) {
         console.error('Error connecting to MongoDB:', err);
@@ -562,6 +569,57 @@ const db = {
       const filtered = subs.filter(s => s.endpoint !== endpoint);
       const headers = ['endpoint', 'p256dh', 'auth'];
       writeCsv(PUSH_SUBSCRIPTIONS_FILE, headers, filtered);
+    }
+  },
+
+  async getVapidKeys() {
+    if (isPg) {
+      const res = await pool.query("SELECT value FROM settings WHERE key = 'vapid_keys'");
+      if (res.rows.length > 0) {
+        return JSON.parse(res.rows[0].value);
+      }
+      return null;
+    } else if (isMongo) {
+      const doc = await mongoDb.collection('settings').findOne({ key: 'vapid_keys' });
+      return doc ? JSON.parse(doc.value) : null;
+    } else {
+      const SETTINGS_FILE = path.join(DATA_DIR, 'settings.csv');
+      if (!fs.existsSync(SETTINGS_FILE)) return null;
+      const settings = readCsv(SETTINGS_FILE);
+      const row = settings.find(s => s.key === 'vapid_keys');
+      return row ? JSON.parse(row.value) : null;
+    }
+  },
+
+  async saveVapidKeys(keys) {
+    const value = JSON.stringify(keys);
+    if (isPg) {
+      await pool.query(
+        `INSERT INTO settings (key, value)
+         VALUES ('vapid_keys', $1)
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+        [value]
+      );
+    } else if (isMongo) {
+      await mongoDb.collection('settings').updateOne(
+        { key: 'vapid_keys' },
+        { $set: { key: 'vapid_keys', value } },
+        { upsert: true }
+      );
+    } else {
+      const SETTINGS_FILE = path.join(DATA_DIR, 'settings.csv');
+      if (!fs.existsSync(SETTINGS_FILE)) {
+        fs.writeFileSync(SETTINGS_FILE, 'key,value\n', 'utf8');
+      }
+      const settings = readCsv(SETTINGS_FILE);
+      const idx = settings.findIndex(s => s.key === 'vapid_keys');
+      if (idx >= 0) {
+        settings[idx].value = value;
+      } else {
+        settings.push({ key: 'vapid_keys', value });
+      }
+      const headers = ['key', 'value'];
+      writeCsv(SETTINGS_FILE, headers, settings);
     }
   }
 };

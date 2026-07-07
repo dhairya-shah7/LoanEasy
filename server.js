@@ -7,45 +7,78 @@ const db = require('./db');
 const XLSX = require('xlsx');
 const webpush = require('web-push');
 
-// Setup VAPID Keys
+// Setup VAPID Keys lazily
 let vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
 let vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+let vapidInitialized = false;
 
-if (!vapidPublicKey || !vapidPrivateKey) {
-  try {
-    const vapidKeysFile = path.join(__dirname, 'data', 'vapid_keys.json');
-    const dataDir = path.join(__dirname, 'data');
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+async function ensureVapidKeys() {
+  if (vapidInitialized) return;
+
+  if (!vapidPublicKey || !vapidPrivateKey) {
+    // 1. Try to load from Database first
+    try {
+      const keys = await db.getVapidKeys();
+      if (keys && keys.publicKey && keys.privateKey) {
+        vapidPublicKey = keys.publicKey;
+        vapidPrivateKey = keys.privateKey;
+        console.log('Loaded VAPID keys from database.');
+      }
+    } catch (err) {
+      console.error('Failed to load VAPID keys from database:', err);
     }
-    
-    if (fs.existsSync(vapidKeysFile)) {
-      const keys = JSON.parse(fs.readFileSync(vapidKeysFile, 'utf8'));
-      vapidPublicKey = keys.publicKey;
-      vapidPrivateKey = keys.privateKey;
+
+    // 2. Fallback to local file if database did not have them
+    if (!vapidPublicKey || !vapidPrivateKey) {
+      const vapidKeysFile = path.join(__dirname, 'data', 'vapid_keys.json');
+      const dataDir = path.join(__dirname, 'data');
+      try {
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
+        if (fs.existsSync(vapidKeysFile)) {
+          const keys = JSON.parse(fs.readFileSync(vapidKeysFile, 'utf8'));
+          vapidPublicKey = keys.publicKey;
+          vapidPrivateKey = keys.privateKey;
+          console.log('Loaded VAPID keys from local file.');
+        }
+      } catch (err) {
+        console.error('Failed to read local VAPID keys file:', err);
+      }
     }
-    
+
+    // 3. Generate new keys and save to database + local file
     if (!vapidPublicKey || !vapidPrivateKey) {
       const keys = webpush.generateVAPIDKeys();
       vapidPublicKey = keys.publicKey;
       vapidPrivateKey = keys.privateKey;
-      fs.writeFileSync(vapidKeysFile, JSON.stringify(keys, null, 2), 'utf8');
-      console.log('Generated and saved new VAPID keys to data/vapid_keys.json');
-    }
-  } catch (e) {
-    console.error('Failed to load/save persistent VAPID keys, using in-memory keys fallback:', e);
-    // Fallback to in-memory generated keys if filesystem is read-only (like Vercel)
-    const keys = webpush.generateVAPIDKeys();
-    vapidPublicKey = keys.publicKey;
-    vapidPrivateKey = keys.privateKey;
-  }
-}
+      
+      // Save to database
+      try {
+        await db.saveVapidKeys(keys);
+        console.log('Saved generated VAPID keys to database.');
+      } catch (err) {
+        console.error('Failed to save generated VAPID keys to database:', err);
+      }
 
-webpush.setVapidDetails(
-  'mailto:admin@loaneasy.com',
-  vapidPublicKey,
-  vapidPrivateKey
-);
+      // Save to local file (if writable)
+      try {
+        const vapidKeysFile = path.join(__dirname, 'data', 'vapid_keys.json');
+        fs.writeFileSync(vapidKeysFile, JSON.stringify(keys, null, 2), 'utf8');
+        console.log('Saved generated VAPID keys to local file.');
+      } catch (err) {
+        console.warn('Failed to save VAPID keys to local file (read-only filesystem):', err);
+      }
+    }
+  }
+
+  webpush.setVapidDetails(
+    'mailto:admin@loaneasy.com',
+    vapidPublicKey,
+    vapidPrivateKey
+  );
+  vapidInitialized = true;
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -65,6 +98,13 @@ app.use(async (req, res, next) => {
       return res.status(500).json({ error: 'Database initialization failed.' });
     }
   }
+  
+  try {
+    await ensureVapidKeys();
+  } catch (err) {
+    console.error('VAPID initialization failed:', err);
+  }
+  
   next();
 });
 
