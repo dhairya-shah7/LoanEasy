@@ -3,9 +3,13 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const db = require('./db');
+const XLSX = require('xlsx');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Track active SSE admin connections for notifications
+const connectedAdmins = new Set();
 
 // Lazy database initialization for serverless / Vercel compatibility
 let dbInitialized = false;
@@ -23,7 +27,7 @@ app.use(async (req, res, next) => {
 });
 
 // Configuration Secrets
-const COOKIE_SECRET = process.env.SESSION_SECRET || 'finnovate-signed-cookie-secret-998811';
+const COOKIE_SECRET = process.env.SESSION_SECRET || 'loaneasy-signed-cookie-secret-998811';
 
 // Setup Express middleware
 app.use(express.json());
@@ -195,6 +199,16 @@ app.post('/api/loans', sessionMiddleware, async (req, res) => {
       `Submitted loan application ID ${loan.id} for PAN ${loan.pan} of Amount ₹${loan.loan_amt}`
     );
 
+    // Broadcast notification to connected admins
+    const notificationPayload = JSON.stringify({
+      message: 'New Loan Applied!',
+      details: `${loan.name} has applied for a ₹${loan.loan_amt} ${loan.loan_type} loan.`,
+      loan: loan
+    });
+    for (const client of connectedAdmins) {
+      client.write(`data: ${notificationPayload}\n\n`);
+    }
+
     return res.json({ success: true, loan });
   } catch (err) {
     console.error('Error saving loan application:', err);
@@ -240,7 +254,7 @@ app.get('/admin', sessionMiddleware, (req, res) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Access Denied - Finnovate</title>
+        <title>Access Denied - Loan Easy</title>
         <style>
           body {
             background-color: #0c101b;
@@ -376,6 +390,94 @@ app.get('/api/admin/audit-logs', sessionMiddleware, async (req, res) => {
   }
 });
 
+// Admin API: Notification SSE Stream
+app.get('/api/admin/notifications/stream', sessionMiddleware, (req, res) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access Denied.' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  connectedAdmins.add(res);
+
+  req.on('close', () => {
+    connectedAdmins.delete(res);
+  });
+});
+
+// Admin API: Download Active Loan Applications as Multi-Sheet Excel (Monthwise)
+app.get('/api/admin/download-excel', sessionMiddleware, async (req, res) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access Denied.' });
+  }
+
+  const ip = getClientIp(req);
+
+  try {
+    const loans = await db.getLoans();
+    const wb = XLSX.utils.book_new();
+
+    const monthGroups = {};
+    loans.forEach(loan => {
+      let mName = loan.month;
+      if (!mName && loan.login_date) {
+        const dateObj = new Date(loan.login_date);
+        if (!isNaN(dateObj.getTime())) {
+          const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+          mName = monthNames[dateObj.getMonth()];
+        }
+      }
+      if (!mName) mName = "Other";
+
+      if (!monthGroups[mName]) {
+        monthGroups[mName] = [];
+      }
+      monthGroups[mName].push(loan);
+    });
+
+    if (Object.keys(monthGroups).length === 0) {
+      const ws = XLSX.utils.json_to_sheet([]);
+      XLSX.utils.book_append_sheet(wb, ws, "No Data");
+    } else {
+      const monthOrder = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const sortedMonths = Object.keys(monthGroups).sort((a, b) => {
+        return monthOrder.indexOf(a) - monthOrder.indexOf(b);
+      });
+
+      sortedMonths.forEach(mName => {
+        const sheetData = monthGroups[mName].map(loan => ({
+          'ID': loan.id,
+          'Name': loan.name,
+          'PAN': loan.pan,
+          'Login Date': loan.login_date,
+          'Loan Amount': loan.loan_amt,
+          'Branch': loan.branch,
+          'DSA Name': loan.dsa_name,
+          'Customer Type': loan.customer_type,
+          'Loan Type': loan.loan_type,
+          'Logged By': loan.logged_by,
+          'Month': loan.month
+        }));
+        const ws = XLSX.utils.json_to_sheet(sheetData);
+        XLSX.utils.book_append_sheet(wb, ws, mName);
+      });
+    }
+
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    await db.logAudit(req.user.email, ip, 'DOWNLOAD_EXCEL_LOANS', `Downloaded full loan records Excel file (Total records: ${loans.length})`);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="loan_easy_applications.xlsx"');
+    return res.send(buf);
+  } catch (err) {
+    console.error('Error generating loans Excel:', err);
+    return res.status(500).send('Error compiling Excel.');
+  }
+});
+
 // Admin API: Download Active Loan Applications as CSV
 app.get('/api/admin/download-csv', sessionMiddleware, async (req, res) => {
   if (!req.user || req.user.role !== 'admin') {
@@ -461,7 +563,7 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   // Initialize database storage structure before launching server locally
   db.init().then(() => {
     app.listen(PORT, () => {
-      console.log(`Finnovate Server running successfully on http://localhost:${PORT}`);
+      console.log(`Loan Easy Server running successfully on http://localhost:${PORT}`);
     });
   }).catch(err => {
     console.error('CRITICAL: Server failed to start due to database adapter initialization failure:', err);

@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Control Centre - Finnovate</title>
+  <title>Admin Control Centre - Loan Easy</title>
   
   <!-- Stylesheets -->
   <link rel="stylesheet" href="/styles.css?v=8">
+  <link rel="icon" type="image/png" href="/assets/logo.png">
   
   <style>
     body {
@@ -264,6 +265,32 @@
         align-items: center;
       }
     }
+
+    /* Notification Status Badges */
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .status-badge.success {
+      background: rgba(16, 185, 129, 0.08);
+      color: var(--color-secondary);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+    }
+    .status-badge.warning {
+      background: rgba(217, 119, 6, 0.08);
+      color: var(--color-warning);
+      border: 1px solid rgba(217, 119, 6, 0.15);
+    }
+    .status-badge.danger {
+      background: rgba(220, 38, 38, 0.08);
+      color: var(--color-danger);
+      border: 1px solid rgba(220, 38, 38, 0.15);
+    }
   </style>
 </head>
 <body>
@@ -272,11 +299,9 @@
   <header class="header">
     <div class="logo-group">
       <div class="logo-container" id="admin-logo-container">
-        <svg class="logo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V10M5 21V10M2 10l10-7 10 7M3 21h18M12 21V10" />
-        </svg>
+        <img src="/assets/logo.png" alt="Loan Easy Logo">
       </div>
-      <span class="logo-text">Finnovate</span>
+      <span class="logo-text">Loan Easy</span>
     </div>
     
     <div class="admin-header-actions" style="display: flex; align-items: center; gap: 20px;">
@@ -308,9 +333,16 @@
     <div class="admin-page-title-group">
       <div>
         <h1>Administrative Control Centre</h1>
-        <div class="admin-meta-info">
+        <div class="admin-meta-info" style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
           <span>Root Access Control Panel</span>
           <span style="color: var(--color-border-focus); font-weight: 700;">Secure Portal Session</span>
+          <span style="border-left: 1px solid var(--color-border); padding-left: 20px; display: inline-flex; align-items: center; gap: 10px;">
+            <span style="font-weight: 600; font-size: 0.85rem; color: var(--color-text-secondary);">Desktop Notifications:</span>
+            <span id="notification-status" class="status-badge warning">Checking...</span>
+            <button id="btn-request-notification" onclick="requestNotificationPermission()" class="btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 6px; display: none;">
+              Enable Notifications
+            </button>
+          </span>
         </div>
       </div>
     </div>
@@ -388,9 +420,9 @@
           <span>Real-time System Audit Trail</span>
         </h2>
         <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-          <a href="/api/admin/download-csv" class="btn-download">
+          <a href="/api/admin/download-excel" class="btn-download">
             <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-            <span>Download Loans CSV</span>
+            <span>Download Loans Excel</span>
           </a>
           <a href="/api/admin/download-audit-logs" class="btn-download" style="background: var(--color-secondary); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.1);">
             <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
@@ -467,10 +499,75 @@
           loadAuditLogs(),
           loadStats()
         ]);
+        checkNotificationPermission();
       } catch (err) {
         console.error('Initial admin load failed:', err);
         window.location.href = '/';
       }
+    }
+
+    function checkNotificationPermission() {
+      const statusEl = document.getElementById('notification-status');
+      const requestBtn = document.getElementById('btn-request-notification');
+      
+      if (!("Notification" in window)) {
+        statusEl.textContent = 'Not Supported';
+        statusEl.className = 'status-badge danger';
+        requestBtn.style.display = 'none';
+        return;
+      }
+      
+      if (Notification.permission === 'granted') {
+        statusEl.textContent = 'Active';
+        statusEl.className = 'status-badge success';
+        requestBtn.style.display = 'none';
+        connectNotificationStream();
+      } else if (Notification.permission === 'denied') {
+        statusEl.textContent = 'Blocked';
+        statusEl.className = 'status-badge danger';
+        requestBtn.style.display = 'inline-block';
+      } else {
+        statusEl.textContent = 'Inactive';
+        statusEl.className = 'status-badge warning';
+        requestBtn.style.display = 'inline-block';
+      }
+    }
+
+    async function requestNotificationPermission() {
+      if (!("Notification" in window)) return;
+      const permission = await Notification.requestPermission();
+      checkNotificationPermission();
+    }
+
+    function connectNotificationStream() {
+      const eventSource = new EventSource('/api/admin/notifications/stream');
+      
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (Notification.permission === 'granted') {
+            new Notification(data.message || "New Loan Application", {
+              body: data.details,
+              icon: '/assets/logo.png'
+            });
+          }
+          
+          showToast(data.details);
+          
+          // Dynamically refresh statistics and lists
+          loadStats();
+          loadAuditLogs();
+        } catch (e) {
+          console.error('Error parsing notification event:', e);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.error('Notification EventSource connection error:', err);
+        eventSource.close();
+        setTimeout(connectNotificationStream, 5000);
+      };
     }
 
     async function loadStats() {
