@@ -28,6 +28,7 @@ const DATA_DIR = path.join(__dirname, 'data');
 const LOANS_FILE = path.join(DATA_DIR, 'loans.csv');
 const USERS_FILE = path.join(DATA_DIR, 'users.csv');
 const AUDIT_FILE = path.join(DATA_DIR, 'audit_logs.csv');
+const PUSH_SUBSCRIPTIONS_FILE = path.join(DATA_DIR, 'push_subscriptions.csv');
 
 // --- Helper Functions for CSV ---
 function ensureLocalDir() {
@@ -43,6 +44,9 @@ function ensureLocalDir() {
   }
   if (!fs.existsSync(AUDIT_FILE)) {
     fs.writeFileSync(AUDIT_FILE, 'id,timestamp,user_email,ip_address,action,details\n', 'utf8');
+  }
+  if (!fs.existsSync(PUSH_SUBSCRIPTIONS_FILE)) {
+    fs.writeFileSync(PUSH_SUBSCRIPTIONS_FILE, 'endpoint,p256dh,auth\n', 'utf8');
   }
 }
 
@@ -165,6 +169,14 @@ const db = {
             details TEXT
           );
         `);
+        await client.query(`
+          CREATE TABLE IF NOT EXISTS push_subscriptions (
+            endpoint TEXT PRIMARY KEY,
+            p256dh TEXT,
+            auth TEXT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
         console.log('PostgreSQL database schemas verified/created.');
       } catch (err) {
         console.error('Error initializing PostgreSQL schemas:', err);
@@ -180,6 +192,7 @@ const db = {
         await mongoDb.collection('users').createIndex({ email: 1 }, { unique: true });
         await mongoDb.collection('loans').createIndex({ login_date: -1, id: -1 });
         await mongoDb.collection('audit_logs').createIndex({ timestamp: -1 });
+        await mongoDb.collection('push_subscriptions').createIndex({ endpoint: 1 }, { unique: true });
         console.log('MongoDB database connection established and indexes verified.');
       } catch (err) {
         console.error('Error connecting to MongoDB:', err);
@@ -472,6 +485,83 @@ const db = {
       return records.map(rec => ({ ...rec, _id: rec._id.toString() }));
     } else {
       return readCsv(AUDIT_FILE);
+    }
+  },
+
+  // --- Push Subscription Actions ---
+  async savePushSubscription(subscription) {
+    const { endpoint, keys } = subscription;
+    const p256dh = keys ? keys.p256dh : '';
+    const auth = keys ? keys.auth : '';
+
+    if (isPg) {
+      await pool.query(
+        `INSERT INTO push_subscriptions (endpoint, p256dh, auth)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (endpoint) DO UPDATE SET p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth`,
+        [endpoint, p256dh, auth]
+      );
+    } else if (isMongo) {
+      await mongoDb.collection('push_subscriptions').updateOne(
+        { endpoint: endpoint },
+        { $set: { endpoint, p256dh, auth, updated_at: new Date().toISOString() } },
+        { upsert: true }
+      );
+    } else {
+      const subs = readCsv(PUSH_SUBSCRIPTIONS_FILE);
+      const existingIdx = subs.findIndex(s => s.endpoint === endpoint);
+      const record = { endpoint, p256dh, auth };
+      if (existingIdx >= 0) {
+        subs[existingIdx] = record;
+      } else {
+        subs.push(record);
+      }
+      const headers = ['endpoint', 'p256dh', 'auth'];
+      writeCsv(PUSH_SUBSCRIPTIONS_FILE, headers, subs);
+    }
+  },
+
+  async getPushSubscriptions() {
+    if (isPg) {
+      const res = await pool.query('SELECT endpoint, p256dh, auth FROM push_subscriptions');
+      return res.rows.map(row => ({
+        endpoint: row.endpoint,
+        keys: {
+          p256dh: row.p256dh,
+          auth: row.auth
+        }
+      }));
+    } else if (isMongo) {
+      const records = await mongoDb.collection('push_subscriptions').find({}).toArray();
+      return records.map(rec => ({
+        endpoint: rec.endpoint,
+        keys: {
+          p256dh: rec.p256dh,
+          auth: rec.auth
+        }
+      }));
+    } else {
+      const subs = readCsv(PUSH_SUBSCRIPTIONS_FILE);
+      return subs.map(rec => ({
+        endpoint: rec.endpoint,
+        keys: {
+          p256dh: rec.p256dh,
+          auth: rec.auth
+        }
+      }));
+    }
+  },
+
+  async deletePushSubscription(endpoint) {
+    if (isPg) {
+      await pool.query('DELETE FROM push_subscriptions WHERE endpoint = $1', [endpoint]);
+    } else if (isMongo) {
+      await mongoDb.collection('push_subscriptions').deleteOne({ endpoint: endpoint });
+    } else {
+      const subs = readCsv(PUSH_SUBSCRIPTIONS_FILE);
+      const filtered = subs.filter(s => s.endpoint !== endpoint);
+      const headers = ['endpoint', 'p256dh', 'auth'];
+      writeCsv(PUSH_SUBSCRIPTIONS_FILE, headers, filtered);
     }
   }
 };

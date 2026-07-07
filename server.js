@@ -2,8 +2,50 @@ require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const fs = require('fs');
 const db = require('./db');
 const XLSX = require('xlsx');
+const webpush = require('web-push');
+
+// Setup VAPID Keys
+let vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+let vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+
+if (!vapidPublicKey || !vapidPrivateKey) {
+  const vapidKeysFile = path.join(__dirname, 'data', 'vapid_keys.json');
+  const dataDir = path.join(__dirname, 'data');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  
+  if (fs.existsSync(vapidKeysFile)) {
+    try {
+      const keys = JSON.parse(fs.readFileSync(vapidKeysFile, 'utf8'));
+      vapidPublicKey = keys.publicKey;
+      vapidPrivateKey = keys.privateKey;
+    } catch (e) {
+      console.error('Error reading vapid_keys.json:', e);
+    }
+  }
+  
+  if (!vapidPublicKey || !vapidPrivateKey) {
+    const keys = webpush.generateVAPIDKeys();
+    vapidPublicKey = keys.publicKey;
+    vapidPrivateKey = keys.privateKey;
+    try {
+      fs.writeFileSync(vapidKeysFile, JSON.stringify(keys, null, 2), 'utf8');
+      console.log('Generated and saved new VAPID keys to data/vapid_keys.json');
+    } catch (e) {
+      console.error('Error writing vapid_keys.json:', e);
+    }
+  }
+}
+
+webpush.setVapidDetails(
+  'mailto:admin@loaneasy.com',
+  vapidPublicKey,
+  vapidPrivateKey
+);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -199,7 +241,7 @@ app.post('/api/loans', sessionMiddleware, async (req, res) => {
       `Submitted loan application ID ${loan.id} for PAN ${loan.pan} of Amount ₹${loan.loan_amt}`
     );
 
-    // Broadcast notification to connected admins
+    // Broadcast notification to connected admins (SSE)
     const notificationPayload = JSON.stringify({
       message: 'New Loan Applied!',
       details: `${loan.name} has applied for a ₹${loan.loan_amt} ${loan.loan_type} loan.`,
@@ -208,6 +250,26 @@ app.post('/api/loans', sessionMiddleware, async (req, res) => {
     for (const client of connectedAdmins) {
       client.write(`data: ${notificationPayload}\n\n`);
     }
+
+    // Broadcast Web Push notifications to background subscribers
+    db.getPushSubscriptions().then(async (subscriptions) => {
+      for (const sub of subscriptions) {
+        try {
+          await webpush.sendNotification(sub, notificationPayload);
+        } catch (pushErr) {
+          if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
+            console.log(`Push subscription expired/invalid. Removing endpoint: ${sub.endpoint}`);
+            await db.deletePushSubscription(sub.endpoint).catch(err => {
+              console.error('Failed to delete push subscription:', err);
+            });
+          } else {
+            console.error('Error sending push notification to endpoint:', sub.endpoint, pushErr);
+          }
+        }
+      }
+    }).catch(err => {
+      console.error('Error fetching push subscriptions for broadcast:', err);
+    });
 
     return res.json({ success: true, loan });
   } catch (err) {
@@ -406,6 +468,34 @@ app.get('/api/admin/notifications/stream', sessionMiddleware, (req, res) => {
   req.on('close', () => {
     connectedAdmins.delete(res);
   });
+});
+
+// Admin API: Get VAPID Public Key
+app.get('/api/admin/notifications/vapid-public-key', sessionMiddleware, (req, res) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access Denied.' });
+  }
+  return res.json({ publicKey: vapidPublicKey });
+});
+
+// Admin API: Subscribe to Push Notifications
+app.post('/api/admin/notifications/subscribe', sessionMiddleware, async (req, res) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access Denied.' });
+  }
+
+  const { subscription } = req.body;
+  if (!subscription || !subscription.endpoint) {
+    return res.status(400).json({ error: 'Invalid subscription object.' });
+  }
+
+  try {
+    await db.savePushSubscription(subscription);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Error saving push subscription:', err);
+    return res.status(500).json({ error: 'Failed to save push subscription.' });
+  }
 });
 
 // Admin API: Download Active Loan Applications as Multi-Sheet Excel (Monthwise)
